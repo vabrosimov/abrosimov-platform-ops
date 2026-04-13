@@ -1,0 +1,55 @@
+---
+- name: Ensure /etc/apt/keyrings exists
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: '0755'
+
+- name: Download Kubernetes apt repository key
+  ansible.builtin.get_url:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    dest: /tmp/docker.key
+    mode: "0644"
+
+- name: Convert Kubernetes apt key into keyring format
+  ansible.builtin.command: >-
+    gpg --dearmor -o /etc/apt/keyrings/docker.gpg /tmp/docker.key
+  args:
+    creates: "/etc/apt/keyrings/docker.gpg"
+
+- name: Add Docker apt repository
+  ansible.builtin.apt_repository:
+    repo: >-
+      deb [arch={{ 'amd64' if ansible_architecture == 'x86_64' else 'arm64' }} 
+      signed-by=/etc/apt/keyrings/docker.gpg] 
+      https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable
+    state: present
+    filename: docker
+
+- name: Install containerd.io
+  ansible.builtin.apt:
+    name: containerd.io
+    state: present
+    update_cache: true
+
+- name: Ensure containerd config directory exists
+  ansible.builtin.file:
+    path: /etc/containerd
+    state: directory
+
+- name: Get default containerd config
+  ansible.builtin.command: containerd config default
+  register: containerd_config_default
+  changed_when: false
+
+- name: Write containerd config with SystemdCgroup enabled
+  ansible.builtin.copy:
+    dest: /etc/containerd/config.toml
+    content: "{{ containerd_config_default.stdout | regex_replace('SystemdCgroup = false', 'SystemdCgroup = true') }}"
+  notify: restart containerd
+
+- name: Enable and start containerd
+  ansible.builtin.systemd:
+    name: containerd
+    enabled: true
+    state: started

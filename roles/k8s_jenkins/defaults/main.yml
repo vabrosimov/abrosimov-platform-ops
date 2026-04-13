@@ -1,0 +1,11 @@
+jenkins_namespace: "jenkins"
+jenkins_hostname: "jenkins.abrosimov.ru"
+
+jenkins_image: "vabrosimov/jenkins:1.0.0"
+
+jenkins_storage_size: "5Gi"
+
+jenkins_cpu: "700m"
+jenkins_memory: "1Gi"
+
+jenkins_admin_password: "admin"

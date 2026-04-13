@@ -1,0 +1,6 @@
+---
+- name: Join worker nodes to cluster
+  become: yes
+  command: "{{ hostvars['cp1']['kubernetes_join_command'] }}"
+  args:
+    creates: /etc/kubernetes/kubelet.conf

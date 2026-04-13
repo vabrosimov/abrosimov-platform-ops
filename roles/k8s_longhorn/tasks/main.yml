@@ -1,0 +1,32 @@
+---
+- name: Install prerequisites on all nodes
+  ansible.builtin.apt:
+    name:
+      - open-iscsi
+      - curl
+      - nfs-common
+    state: present
+    update_cache: true
+
+- name: Enable and start iscsid
+  ansible.builtin.systemd:
+    name: containerd
+    enabled: true
+    state: started
+
+- name: Apply Longhorn manifest (control_plane only)
+  ansible.builtin.command:
+    cmd: "kubectl apply -f https://raw.githubusercontent.com/longhorn/longhorn/{{ longhorn_version }}/deploy/longhorn.yaml"
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+  when: inventory_hostname in groups['control_plane']
+  register: longhorn_result
+  changed_when: "'created' in longhorn_result.stdout or 'configured' in longhorn_result.stdout"
+
+- name: Wait for Longhorn pods to be ready
+  ansible.builtin.command:
+    cmd: "kubectl wait --namespace longhorn-system --for=condition=ready pod --all --timeout=600s"
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+  when: inventory_hostname in groups['control_plane']
+  changed_when: false

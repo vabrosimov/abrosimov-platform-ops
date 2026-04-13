@@ -1,0 +1,69 @@
+- name: Install prerequisites on all nodes
+  hosts: k8s_cluster
+  become: true
+  gather_facts: yes
+  pre_tasks:
+    - name: Verify OS is supported
+      ansible.builtin.assert:
+        that: ansible_os_family in ['Debian', 'RedHat']
+        fail_msg: "This role currently supports only Debian or RedHat based distributions."
+      tags: [ 'always' ]
+
+  roles:
+    - role: k8s_prerequisites
+    - role: containerd
+    - role: k8s_core_tools
+
+
+- name: Initialize Kubernetes Control Plane
+  hosts: control_plane
+  become: true
+  gather_facts: yes
+
+  roles:
+    - role: control_plane_init
+    - role: cni_calico
+
+
+- name: Join Worker nodes to the cluster
+  hosts: workers
+  become: true
+  gather_facts: yes
+
+  roles:
+    - role: worker_join
+
+
+- name: Prepare Nodes for Longhorn
+  hosts: k8s_cluster
+  become: true
+  roles:
+    - k8s_longhorn
+
+
+- name: Deploy Infrastructure
+  hosts: control_plane
+  become: true
+  roles:
+    - k8s_ansible_dependencies
+    - k8s_metallb
+    - k8s_nginx_ingress
+    - k8s_jenkins
+
+
+  post_tasks:
+    - name: Setup local kubeconfig for Lens/kubectl
+      block:
+        - name: Read admin.conf from server
+          ansible.builtin.slurp:
+            src: /etc/kubernetes/admin.conf
+          register: kubeconfig_raw
+
+        - name: Save adjusted kubeconfig locally
+          ansible.builtin.copy:
+            content: "{{ kubeconfig_raw.content | b64decode | replace('127.0.0.1', ansible_host) }}"
+            dest: "./my_cluster_config"
+            mode: '0600'
+          delegate_to: localhost
+          become: false
+      when: inventory_hostname in groups['control_plane']

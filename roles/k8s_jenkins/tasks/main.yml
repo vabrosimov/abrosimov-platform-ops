@@ -1,0 +1,53 @@
+- name: Create Jenkins Namespace
+  kubernetes.core.k8s:
+    kubeconfig: "{{ kubeconfig_path }}"
+    name: "{{ jenkins_namespace }}"
+    kind: Namespace
+    state: present
+
+- name: Create Jenkins Admin Password Secret
+  kubernetes.core.k8s:
+    kubeconfig: "{{ kubeconfig_path }}"
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: jenkins-admin-secret
+        namespace: "{{ jenkins_namespace }}"
+      stringData:
+        jenkins-admin-password: "{{ jenkins_admin_password }}"
+
+- name: Create Jenkins CasC ConfigMap
+  kubernetes.core.k8s:
+    kubeconfig: "{{ kubeconfig_path }}"
+    state: present
+    definition:
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: jenkins-casc-config
+        namespace: "{{ jenkins_namespace }}"
+      data:
+        casc.yaml: "{{ lookup('template', 'casc.yaml.j2') }}"
+
+- name: Apply Jenkins Main Manifests (PVC, Deployment, Service, Ingress)
+  kubernetes.core.k8s:
+    kubeconfig: "{{ kubeconfig_path }}"
+    state: present
+    definition: "{{ lookup('template', 'jenkins.yaml.j2') | from_yaml_all | list }}"
+
+- name: Wait for Jenkins pod to be ready
+  kubernetes.core.k8s_info:
+    kubeconfig: "{{ kubeconfig_path }}"
+    kind: Pod
+    namespace: "{{ jenkins_namespace }}"
+    label_selectors:
+      - app=jenkins
+  register: jenkins_pod
+  until:
+    - jenkins_pod.resources | length > 0
+    - jenkins_pod.resources[0].status.phase == "Running"
+    - jenkins_pod.resources[0].status.containerStatuses[0].ready
+  retries: 60
+  delay: 10

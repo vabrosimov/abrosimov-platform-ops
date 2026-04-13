@@ -1,0 +1,41 @@
+---
+- name: Install MetalLB manifest
+  ansible.builtin.command:
+    cmd: "kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/{{ metallb_version }}/config/manifests/metallb-native.yaml"
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+  register: metallb_install
+  changed_when: "'created' in metallb_install.stdout"
+
+- name: Wait for MetalLB controller to be ready
+  ansible.builtin.command:
+    cmd: "kubectl wait --namespace metallb-system --for=condition=ready pod --selector=component=controller --timeout=180s"
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+  changed_when: false
+
+- name: Configure MetalLB IP Address Pool and L2 Advertisement
+  ansible.builtin.shell: |
+    cat <<EOF | kubectl apply -f -
+    apiVersion: metallb.io/v1beta1
+    kind: IPAddressPool
+    metadata:
+      name: first-pool
+      namespace: metallb-system
+    spec:
+      addresses:
+      - {{ metallb_ip_range }}
+    ---
+    apiVersion: metallb.io/v1beta1
+    kind: L2Advertisement
+    metadata:
+      name: l2-adv
+      namespace: metallb-system
+    spec:
+      ipAddressPools:
+      - first-pool
+    EOF
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+  register: metallb_config
+  changed_when: "'created' in metallb_config.stdout or 'configured' in metallb_config.stdout"

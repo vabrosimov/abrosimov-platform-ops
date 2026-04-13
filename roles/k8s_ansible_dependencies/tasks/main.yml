@@ -1,0 +1,8 @@
+- name: Install Python dependencies for Kubernetes modules
+  ansible.builtin.apt:
+    name:
+      - python3-kubernetes  # для kubernetes.core модуля ansible
+      - python3-yaml        # для парсинга манифестов
+    state: present
+    update_cache: true
+  become: true

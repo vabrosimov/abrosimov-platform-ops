@@ -1,0 +1,24 @@
+users:
+  - default # Используем стандартного пользователя ubuntu
+  - name: ansible
+    gecos: Ansible Automation User
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    shell: /bin/bash
+    lock_passwd: true
+    ssh_authorized_keys:
+      - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFF1B0YVlDp/1v1faP9r7TsDm6HR3Gz2HtiooVlgzOff id_ed25519_ansible"
+
+write_files:
+  - path: /etc/profile.d/01-kubectl-alias.sh
+    owner: root:root
+    permissions: '0644'
+    content: |
+      alias k='kubectl'
+      # Настройка автодополнения для алиаса k
+      source <(kubectl completion bash)
+      complete -o default -F __start_kubectl k
+
+runcmd:
+  - [ systemctl, reload, ssh ]
+  - apt-get update
+  - apt-get install -y bash-completion

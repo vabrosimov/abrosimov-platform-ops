@@ -1,0 +1,2 @@
+metallb_version: "v0.14.5"
+metallb_ip_range: "192.168.2.100-192.168.2.150"
