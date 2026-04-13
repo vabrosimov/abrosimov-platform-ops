@@ -84,8 +84,13 @@ metadata:
   namespace: {{ jenkins_namespace }}
   annotations:
     nginx.ingress.kubernetes.io/proxy-body-size: "0"
+    cert-manager.io/cluster-issuer: "{{ cluster_issuer_name }}"
 spec:
   ingressClassName: nginx
+  tls:
+  - hosts:
+    - {{ jenkins_hostname }}
+    secretName: jenkins-tls-secret
   rules:
   - host: {{ jenkins_hostname }}
     http:
