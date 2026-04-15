@@ -13,9 +13,9 @@
 - name: Install Cert-Manager via Helm
   kubernetes.core.helm:
     kubeconfig: "{{ kubeconfig_path }}"
-    name: "{{ cert_manager_namespace }}"
+    name: cert-manager
     chart_ref: jetstack/cert-manager
-    release_namespace: cert-manager
+    release_namespace: "{{ cert_manager_namespace }}"
     values:
       installCRDs: true # (Custom Resource Definitions - новые типы объектов в K8s (Certificate, Issuer и т.д))
     wait: yes
