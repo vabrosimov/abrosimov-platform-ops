@@ -8,7 +8,7 @@
   args:
     creates: "{{ kubeconfig_path }}"
 
-- name: Create .kube directory for the user
+- name: Create .kube directory for the Ansible user
   file:
     path: "/home/{{ ansible_user }}/.kube"
     state: directory
@@ -16,7 +16,16 @@
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
 
-- name: Copy admin.conf to user's kube config
+- name: Create .kube directory for default user
+  file:
+    path: "/home/{{ cluster_user }}/.kube"
+    state: directory
+    mode: '0755'
+    owner: "{{ cluster_user }}"
+    group: "{{ cluster_user }}"
+  become: true
+
+- name: Copy admin.conf to Ansible's kube config
   become: yes
   copy:
     src: "{{ kubeconfig_path }}"
@@ -24,6 +33,16 @@
     remote_src: yes
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
+    mode: '0600'
+
+- name: Copy admin.conf to default user's kube config
+  become: yes
+  copy:
+    src: "{{ kubeconfig_path }}"
+    dest: "/home/{{ cluster_user }}/.kube/config"
+    remote_src: yes
+    owner: "{{ cluster_user }}"
+    group: "{{ cluster_user }}"
     mode: '0600'
 
 - name: Generate join command
