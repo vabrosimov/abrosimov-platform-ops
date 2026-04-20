@@ -1,0 +1,2 @@
+metrics_server_cpu: "100m"
+metrics_server_memory: "0.5Gi"

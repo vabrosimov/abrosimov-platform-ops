@@ -1,0 +1,11 @@
+defaultArgs:
+  - --cert-dir=/tmp
+  - --kubelet-insecure-tls
+  - --kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname
+
+resources:
+  requests:
+    cpu: {{ metrics_server_cpu }}
+    memory: {{ metrics_server_memory }}
+  limits:
+    memory: {{ metrics_server_memory }}

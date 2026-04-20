@@ -49,6 +49,7 @@
     - k8s_metallb
     - k8s_nginx_ingress
     - k8s_cert_manager
+    - k8s_metrics_server
     - k8s_jenkins
 
 

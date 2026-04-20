@@ -1,0 +1,13 @@
+- name: Add Metrics Server Helm repository
+  kubernetes.core.helm_repository:
+    name: metrics-server
+    repo_url: "https://kubernetes-sigs.github.io/metrics-server/"
+
+- name: Install Metrics Server via Helm
+  kubernetes.core.helm:
+    kubeconfig: "{{ kubeconfig_path }}"
+    name: metrics-server
+    chart_ref: metrics-server/metrics-server
+    release_namespace: kube-system
+    values: "{{ lookup('template', 'metrics-server.yaml.j2') | from_yaml }}"
+    wait: yes
