@@ -6,6 +6,7 @@ build/
 .kotlin
 abrosimov-platform-ops.iml
 playbooks/my_cluster_config
+playbooks/my_cluster_root_ca.crt
 
 ### IntelliJ IDEA ###
 .idea

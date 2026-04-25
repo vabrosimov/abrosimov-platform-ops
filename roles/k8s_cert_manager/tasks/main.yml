@@ -18,9 +18,45 @@
     release_namespace: "{{ cert_manager_namespace }}"
     values:
       installCRDs: true # (Custom Resource Definitions - новые типы объектов в K8s (Certificate, Issuer и т.д))
-    wait: yes
+    wait: true
 
-- name: Create Self-Signed ClusterIssuer
+- name: Create Bootstrap ClusterIssuer
+  kubernetes.core.k8s:
+    kubeconfig: "{{ kubeconfig_path }}"
+    state: present
+    definition:
+      apiVersion: cert-manager.io/v1
+      kind: ClusterIssuer
+      metadata:
+        name: selfsigned-issuer
+      spec:
+        selfSigned: {}
+
+- name: Create Root CA Certificate
+  kubernetes.core.k8s:
+    kubeconfig: "{{ kubeconfig_path }}"
+    state: present
+    definition:
+      apiVersion: cert-manager.io/v1
+      kind: Certificate
+      metadata:
+        name: root-ca
+        namespace: "{{ cert_manager_namespace }}"
+      spec:
+        isCA: true
+        commonName: "Abrosimov Root CA"
+        secretName: root-ca-secret
+        duration: 87600h
+        renewBefore: 720h
+        privateKey:
+          algorithm: ECDSA
+          size: 256
+        issuerRef:
+          name: selfsigned-issuer
+          kind: ClusterIssuer
+          group: cert-manager.io
+
+- name: Create CA ClusterIssuer
   kubernetes.core.k8s:
     kubeconfig: "{{ kubeconfig_path }}"
     state: present
@@ -30,4 +66,21 @@
       metadata:
         name: "{{ cluster_issuer_name }}"
       spec:
-        selfSigned: {}
+        ca:
+          secretName: root-ca-secret
+
+- name: Fetch Root CA certificate
+  kubernetes.core.k8s_info:
+    kubeconfig: "{{ kubeconfig_path }}"
+    kind: Secret
+    name: root-ca-secret
+    namespace: cert-manager
+  register: root_ca
+
+- name: Save Root CA locally
+  ansible.builtin.copy:
+    content: "{{ root_ca.resources[0].data['tls.crt'] | b64decode }}"
+    dest: "./my_cluster_root_ca.crt"
+    mode: '0600'
+  delegate_to: localhost
+  become: false
