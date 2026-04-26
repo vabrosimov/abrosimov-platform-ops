@@ -1,0 +1,129 @@
+global:
+  ingress:
+    configureCertmanager: false
+    # Указываем использовать существующий класс
+    class: nginx
+    annotations:
+      kubernetes.io/ingress.class: nginx
+      cert-manager.io/cluster-issuer: "{{ cluster_issuer_name }}"
+    tls:
+      enabled: true
+  hosts:
+    domain: abrosimov.ru
+    gitlab:
+      name: {{ gitlab_hostname }}
+  persistence:
+    storageClass: "longhorn"
+  initialRootPassword:
+    secret: "gitlab-root-password"
+    key: "password"
+
+nginx-ingress:
+  enabled: false
+  install: false
+
+tags:
+  nginx-ingress: false
+  certmanager: false
+  prometheus: false
+  grafana: false
+
+gitlab:
+  webservice:
+    workerProcesses: {{ gitlab_webservice_workers }}
+    minReplicas: {{ gitlab_webservice_replicas }}
+    maxReplicas: {{ gitlab_webservice_replicas }}
+    resources:
+      requests:
+        cpu: {{ gitlab_webservice_cpu }}
+        memory: {{ gitlab_webservice_memory }}
+      limits:
+        memory: {{ gitlab_webservice_memory }}
+  sidekiq:
+    minReplicas: {{ gitlab_sidekiq_replicas }}
+    maxReplicas: {{ gitlab_sidekiq_replicas }}
+    resources:
+      requests:
+        cpu: {{ gitlab_sidekiq_cpu }}
+        memory: {{ gitlab_sidekiq_memory }}
+      limits:
+        memory: {{ gitlab_sidekiq_memory }}
+  gitlab-shell: # обрабатывает ssh запросы к репозиториям
+    minReplicas: {{ gitlab_shell_replicas }}
+    maxReplicas: {{ gitlab_shell_replicas }}
+  kas: # (Kubernetes Agent Server)
+    maxReplicas: {{ gitlab_kas_replicas }}
+    minReplicas: {{ gitlab_kas_replicas }}
+    resources:
+      requests:
+        cpu: {{ gitlab_kas_cpu }}
+        memory: {{ gitlab_kas_memory }}
+      limits:
+        memory: {{ gitlab_kas_memory }}
+  gitaly:
+    persistence:
+      size: {{ gitlab_gitaly_storage_size }}
+    resources:
+      requests:
+        cpu: {{ gitlab_gitaly_cpu }}
+        memory: {{ gitlab_gitaly_memory }}
+      limits:
+        memory: {{ gitlab_gitaly_memory }}
+
+minio: # объектное хранилище для тяжелых бинарных данных
+  image: "minio/minio"
+  imageTag: "RELEASE.2025-09-07T16-13-09Z-cpuv1" # вручную меняем образ, т.к. в чарте используется слишком старый не multiarch образ, который не запускается на ARM
+  minioMc: # (MinIO Client) консольная утилита для управления хранилищем MinIO или любым другим S3-совместимым сервисом
+    image: "minio/mc"
+    tag: "RELEASE.2023-12-02T11-24-10Z" # меняем minioMc образ для совместимости с minio
+  persistence:
+    size: {{ minio_storage_size }}
+  resources:
+    requests:
+      cpu: {{ minio_cpu }}
+      memory: {{ minio_memory }}
+    limits:
+      memory: {{ minio_memory }}
+
+registry:
+  hpa:
+    minReplicas: {{ registry_replicas }}
+    maxReplicas: {{ registry_replicas }}
+  resources:
+    requests:
+      cpu: {{ registry_cpu }}
+      memory: {{ registry_memory }}
+    limits:
+      memory: {{ registry_memory }}
+
+postgresql:
+  persistence:
+    size: {{ postgresql_storage_size }}
+  resources:
+    requests:
+      cpu: {{ postgresql_cpu }}
+      memory: {{ postgresql_memory }}
+    limits:
+      memory: {{ postgresql_memory }}
+
+redis:
+  master:
+    persistence:
+      size: {{ redis_storage_size }}
+  resources:
+    requests:
+      cpu: {{ redis_cpu }}
+      memory: {{ redis_memory }}
+    limits:
+      memory: {{ redis_memory }}
+
+gitlab-runner:
+  install: false
+
+prometheus:
+  install: false
+
+installCertmanager: false
+
+certmanager:
+  install: false

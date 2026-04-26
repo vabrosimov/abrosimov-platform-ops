@@ -51,6 +51,7 @@
     - k8s_cert_manager
     - k8s_metrics_server
     - k8s_jenkins
+    - k8s_gitlab
 
 
   post_tasks:

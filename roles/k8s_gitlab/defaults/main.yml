@@ -1,0 +1,41 @@
+gitlab_namespace: "gitlab"
+gitlab_hostname: "gitlab.abrosimov.ru"
+
+gitlab_registry_hostname: "registry.abrosimov.ru"
+
+gitlab_webservice_cpu: "1000m"
+gitlab_webservice_memory: "4Gi"
+gitlab_webservice_workers: 1
+gitlab_webservice_replicas: 1
+
+gitlab_sidekiq_cpu: "400m"
+gitlab_sidekiq_memory: "2Gi"
+gitlab_sidekiq_replicas: 1
+
+gitlab_shell_replicas: 1
+
+gitlab_kas_cpu: "100m"
+gitlab_kas_memory: "256Mi"
+gitlab_kas_replicas: 1
+
+gitlab_gitaly_cpu: "400m"
+gitlab_gitaly_memory: "1Gi"
+gitlab_gitaly_storage_size: "10Gi"
+
+minio_cpu: "100m"
+minio_memory: "512Mi"
+minio_storage_size: "5Gi"
+
+registry_cpu: "100m"
+registry_memory: "256Mi"
+registry_replicas: 1
+
+postgresql_cpu: "300m"
+postgresql_memory: "1Gi"
+postgresql_storage_size: "4Gi"
+
+redis_cpu: "100m"
+redis_memory: "256Mi"
+redis_storage_size: "2Gi"
+
+gitlab_admin_password: "Strong_Password1234$"

@@ -1,0 +1,57 @@
+- name: Add GitLab Helm repository
+  kubernetes.core.helm_repository:
+    name: gitlab
+    repo_url: "https://charts.gitlab.io/"
+
+- name: Create GitLab Namespace
+  kubernetes.core.k8s:
+    kubeconfig: "{{ kubeconfig_path }}"
+    name: "{{ gitlab_namespace }}"
+    kind: Namespace
+    state: present
+
+# в официальном чарте баг: Minio ожидает креды в переменных MINIO_ROOT_USER и MINIO_ROOT_PASSWORD,
+# но они ему не передаются, вследствие чего Minio выставляет стандартный логин пароль minioadmin/minioadmin.
+# Остальные же компоненты опираются на секрет gitlab-minio-secret, в котором находятся другие значения.
+# Для решения проблемы заранее создаем gitlab-minio-secret, чтобы helm не переписал данный секрет своими значениями
+- name: Ensure MinIO credentials secret exists and is correct
+  kubernetes.core.k8s:
+    kubeconfig: "{{ kubeconfig_path }}"
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: gitlab-minio-secret
+        namespace: "{{ gitlab_namespace }}"
+      type: Opaque
+      stringData:
+        accesskey: "minioadmin"
+        secretkey: "minioadmin"
+
+- name: Ensure GitLab initial root password secret exists
+  kubernetes.core.k8s:
+    kubeconfig: "{{ kubeconfig_path }}"
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: gitlab-root-password
+        namespace: gitlab
+      type: Opaque
+      stringData:
+        password: "{{ gitlab_admin_password }}"
+
+- name: Install GitLab via Helm
+  kubernetes.core.helm:
+    kubeconfig: "{{ kubeconfig_path }}"
+    name: gitlab
+    chart_ref: gitlab/gitlab
+    release_namespace: "{{ gitlab_namespace }}"
+    chart_version: "9.11.0"
+    values: "{{ lookup('template', 'gitlab.yaml.j2') | from_yaml }}"
+    # ГЛАВНЫЙ ПАРАМЕТР:
+    skip_crds: yes
+    wait: no
+    timeout: 600s
